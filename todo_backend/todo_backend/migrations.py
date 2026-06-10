@@ -16,15 +16,15 @@ def ensure_todos_table(engine: Engine) -> None:
 
     This is intentionally idempotent and uses CREATE TABLE IF NOT EXISTS.
     """
-    # Note: storing timestamps as TEXT in SQLite is common; SQLAlchemy will
-    # deserialize for us when mapped as DateTime if values are ISO strings.
-    # Here we create as DATETIME with defaults using CURRENT_TIMESTAMP.
+    # NOTE: Keep this DDL aligned with the `database` container's init script
+    # (fastapi-todo-service-202616-202621/database/init_db.py) so both containers
+    # agree on column types and constraints.
     ddl = """
     CREATE TABLE IF NOT EXISTS todos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         description TEXT,
-        completed BOOLEAN NOT NULL DEFAULT 0,
+        completed INTEGER NOT NULL DEFAULT 0 CHECK (completed IN (0, 1)),
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -35,3 +35,4 @@ def ensure_todos_table(engine: Engine) -> None:
         # Helpful indexes for typical lookups/filters (optional but safe).
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(completed);"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_todos_created_at ON todos(created_at);"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_todos_updated_at ON todos(updated_at);"))
